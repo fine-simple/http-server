@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace HTTPServer
 {
@@ -81,8 +79,15 @@ namespace HTTPServer
                 return false;
             relativeURI = requestLines[1];
             //Check HTTP Version
-
-            // TODO: Assign httpVersion to version
+            if (requestLines[2] == "HTTP/0.9")
+                httpVersion = HTTPVersion.HTTP09;
+            else if (requestLines[2] == "HTTP/1.0")
+                httpVersion = HTTPVersion.HTTP10;
+            else if (requestLines[2] == "HTTP/1.1")
+                httpVersion = HTTPVersion.HTTP11;
+            else
+                return false;
+            return true;
         }
 
         private bool ValidateIsURI(string uri)
