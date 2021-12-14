@@ -13,7 +13,7 @@ namespace HTTPServer
             //Datetime:
             DateTime dateTime = DateTime.Now;
             // log exception details associated with datetime 
-            File.AppendAllText("log.txt", $"{dateTime}: {ex.Message}");
+            File.AppendAllText("log.txt", $"{dateTime}: {ex.Message} at {ex.TargetSite}\n");
         }
     }
 }

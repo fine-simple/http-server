@@ -70,16 +70,37 @@ namespace HTTPServer
 
         Response HandleRequest(Request request)
         {
-            string content = string.Empty;
+            string content;
             string redirected = string.Empty;
             StatusCode statusCode = StatusCode.OK;
             try
             {
-                // check for bad request 
+                // check for bad request
                 if (request.ParseRequest() == false)
-                    statusCode = StatusCode.BadRequest;
-                
+                {
+                    statusCode = StatusCode.BadRequest;;
+                    content = File.ReadAllText(Path.Combine(Configuration.RootPath, Configuration.BadRequestDefaultPageName));
+                    return new Response(StatusCode.BadRequest, "text/html", content, redirected);
+                }
+
                 string physicalPath = Path.Combine(Configuration.RootPath, request.relativeURI);
+                
+                // check file
+                if (!File.Exists(physicalPath))
+                {
+                    // redirection page not found
+                    if (redirected != string.Empty)
+                    {
+                        statusCode = StatusCode.InternalServerError;
+                        physicalPath = Path.Combine(Configuration.RootPath, Configuration.InternalErrorDefaultPageName);
+                    }
+                    // normal page not found
+                    else
+                    {
+                        statusCode = StatusCode.NotFound;
+                        physicalPath = Path.Combine(Configuration.RootPath, Configuration.NotFoundDefaultPageName);
+                    }
+                }
                 
                 // check for redirect
                 redirected = GetRedirectionPagePathIFExist(request.relativeURI);
@@ -89,21 +110,6 @@ namespace HTTPServer
                     physicalPath = Path.Combine(Configuration.RootPath, Configuration.RedirectionDefaultPageName);
                 }
 
-                // check file
-                if (!File.Exists(physicalPath))
-                {
-                    if (redirected != string.Empty)
-                    {
-                        statusCode = StatusCode.InternalServerError;
-                        physicalPath = Path.Combine(Configuration.RootPath, Configuration.InternalErrorDefaultPageName);
-                    }
-                    else
-                    {
-                        statusCode = StatusCode.NotFound;
-                        physicalPath = Path.Combine(Configuration.RootPath, Configuration.NotFoundDefaultPageName);
-                    }
-                }
-                
                 // read the physical file
                 content = LoadDefaultPage(physicalPath);
             }
@@ -112,6 +118,7 @@ namespace HTTPServer
                 Logger.LogException(ex);
                 // in case of exception, return Internal Server Error.
                 statusCode = StatusCode.InternalServerError;
+                content = File.ReadAllText(Path.Combine(Configuration.RootPath, Configuration.InternalErrorDefaultPageName));
             }
             // Create OK response
             return new Response(statusCode, "text/html", content, redirected);
