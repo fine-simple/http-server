@@ -44,7 +44,7 @@ namespace HTTPServer
         public bool ParseRequest()
         {
             //TODO: parse the receivedRequest using the \r\n delimeter   
-            contentLines = requestString.Split("\r\n".ToCharArray());
+            contentLines = requestString.Split(new string[] { "\r\n" }, StringSplitOptions.None);
             // check that there is atleast 3 lines: Request line, Host Header, Blank line (usually 4 lines with the last empty line for empty content)
             if (contentLines.Length < 3)
                 return false;
@@ -77,7 +77,7 @@ namespace HTTPServer
             // Check URI
             if (!ValidateIsURI(requestLines[1]))
                 return false;
-            relativeURI = requestLines[1];
+            relativeURI = requestLines[1].Substring(1);
             //Check HTTP Version
             if (requestLines[2] == "HTTP/0.9")
                 httpVersion = HTTPVersion.HTTP09;
@@ -97,13 +97,32 @@ namespace HTTPServer
 
         private bool LoadHeaderLines()
         {
-            throw new NotImplementedException();
+            headerLines = new Dictionary<string, string>();
+            try
+            {
+                for (int i = 1; contentLines[i] != ""; i++)
+                {
+                    string[] dict = contentLines[i].Split(':');
+                    if (dict.Length < 2)
+                        continue;
+                    headerLines[dict[0]] = dict[1];
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogException(ex);
+                return false; 
+            }
         }
 
         private bool ValidateBlankLine()
         {
-            if (requestString.Contains("\r\n\r\n"))
-                return true;
+            for (int i = 2; i < contentLines.Length; i++)
+            {
+                if (contentLines[i] == "")
+                    return true;
+            }
             return false;
         }
 
