@@ -20,7 +20,6 @@ namespace HTTPServer
 
         public Response(StatusCode code, string contentType, string content, string redirectoinPath)
         {
-            // TODO: Add headlines (Content-Type, Content-Length,Date, [location if there is redirection])
             headerLines = new List<string>() { 
                 $"Content-Type: {contentType}",
                 $"Content-Length: {content.Length}",
@@ -29,8 +28,7 @@ namespace HTTPServer
             
             if (redirectoinPath != string.Empty)
                 headerLines.Add($"Location: {redirectoinPath}");
-            // TODO: Create the response string
-            
+   
             // status line
             responseString = $"{GetStatusLine(code)}\r\n";
             // headers
@@ -46,7 +44,6 @@ namespace HTTPServer
 
         private string GetStatusLine(StatusCode code)
         {
-            // TODO: Create the response status line and return it
             string statusLine;
             string statusMsg = string.Empty;
             switch (code)
@@ -68,7 +65,7 @@ namespace HTTPServer
                     break;
             }
             
-            statusLine = $"HTTP/1.1 {(int)code} {statusMsg}";
+            statusLine = $"{Configuration.ServerHTTPVersion} {(int)code} {statusMsg}";
 
             return statusLine;
         }

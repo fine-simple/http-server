@@ -15,9 +15,8 @@ namespace HTTPServer
 
         public Server(int portNumber, string redirectionMatrixPath)
         {
-            //TODO: call this.LoadRedirectionRules passing redirectionMatrixPath to it
             this.LoadRedirectionRules(redirectionMatrixPath);
-            //TODO: initialize this.serverSocket
+            
             this.serverSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             IPEndPoint iPEndPoint = new IPEndPoint(IPAddress.Any, portNumber);
 
@@ -28,11 +27,10 @@ namespace HTTPServer
         {
             // TODO: Listen to connections, with large backlog.
             serverSocket.Listen(100);
-            // TODO: Accept connections in while loop and start a thread for each connection on function "Handle Connection"
             while (true)
             {
                 Socket clientSocket = serverSocket.Accept();
-                //TODO: accept connections and start thread for each accepted connection.
+                // start thread for each accepted connection.
                 Thread thread = new Thread(new ParameterizedThreadStart(HandleConnection));
                 thread.Start(clientSocket);
             }
@@ -40,36 +38,32 @@ namespace HTTPServer
 
         public void HandleConnection(object obj)
         {
-            // TODO: Create client socket
             Socket clientSocket = (Socket) obj;
-            // set client socket ReceiveTimeout = 0 to indicate an infinite time-out period
+            // infinite time-out period
             clientSocket.ReceiveTimeout = 0;
-            // TODO: receive requests in while true until remote client closes the socket.
             while (true)
             {
                 try
                 {
-                    // TODO: Receive request
+                    // Receive request
                     byte[] buffer = new byte[1024 * 1024];
-                    int len = clientSocket.Receive(buffer);
-                    // TODO: break the while loop if receivedLen==0
-                    if (len == 0)
+                    int receivedLen = clientSocket.Receive(buffer);
+                    // break the while loop if recieved nothing
+                    if (receivedLen == 0)
                         break;
-                    // TODO: Create a Request object using received request string
-                    Request request = new Request(ASCIIEncoding.ASCII.GetString(buffer, 0, len));
-                    // TODO: Call HandleRequest Method that returns the response
+                    
+                    Request request = new Request(ASCIIEncoding.ASCII.GetString(buffer, 0, receivedLen));
+                    
+                    // Send Response
                     Response response = HandleRequest(request);
-                    // TODO: Send Response back to client
                     clientSocket.Send(ASCIIEncoding.ASCII.GetBytes(response.ResponseString));
                 }
                 catch (Exception ex)
                 {
-                    // TODO: log exception using Logger class
                     Logger.LogException(ex);
                 }
             }
 
-            // TODO: close client socket
             clientSocket.Shutdown(SocketShutdown.Both);
             clientSocket.Close();
         }
@@ -81,12 +75,13 @@ namespace HTTPServer
             StatusCode statusCode = StatusCode.OK;
             try
             {
-                //TODO: check for bad request 
+                // check for bad request 
                 if (request.ParseRequest() == false)
                     statusCode = StatusCode.BadRequest;
-                //TODO: map the relativeURI in request to get the physical path of the resource.
+                
                 string physicalPath = Path.Combine(Configuration.RootPath, request.relativeURI);
-                //TODO: check for redirect
+                
+                // check for redirect
                 redirected = GetRedirectionPagePathIFExist(request.relativeURI);
                 if (redirected != string.Empty)
                 {
@@ -94,7 +89,7 @@ namespace HTTPServer
                     physicalPath = Path.Combine(Configuration.RootPath, Configuration.RedirectionDefaultPageName);
                 }
 
-                //TODO: check file
+                // check file
                 if (!File.Exists(physicalPath))
                 {
                     if (redirected != string.Empty)
@@ -109,14 +104,13 @@ namespace HTTPServer
                     }
                 }
                 
-                //TODO: read the physical file
+                // read the physical file
                 content = LoadDefaultPage(physicalPath);
             }
             catch (Exception ex)
             {
-                // TODO: log exception using Logger class
                 Logger.LogException(ex);
-                // TODO: in case of exception, return Internal Server Error.
+                // in case of exception, return Internal Server Error.
                 statusCode = StatusCode.InternalServerError;
             }
             // Create OK response
@@ -133,11 +127,8 @@ namespace HTTPServer
             return string.Empty;
         }
 
-        private string LoadDefaultPage(string defaultPageName)
+        private string LoadDefaultPage(string filePath)
         {
-            string filePath = Path.Combine(Configuration.RootPath, defaultPageName);
-            // TODO: check if filepath not exist log exception using Logger class and return empty string
-            // else read file and return its content
             try
             {
                 return File.ReadAllText(filePath);
@@ -154,11 +145,10 @@ namespace HTTPServer
             Configuration.RedirectionRules = new Dictionary<string, string>();
             try
             {
-                // TODO: using the filepath paramter read the redirection rules from file
+                // read the redirection rules from file
                 string rawText = File.ReadAllText(filePath);
-                // then fill Configuration.RedirectionRules dictionary
+                // fill Configuration.RedirectionRules dictionary
                 string[] redirections = rawText.Split('\n');
-
                 for (int i = 0; i < redirections.Length; i++)
                 {
                     string[] redirectionArr = redirections[i].Split(',');
@@ -167,9 +157,7 @@ namespace HTTPServer
             }
             catch (Exception ex)
             {
-                // TODO: log exception using Logger class
                 Logger.LogException(ex);
-                Environment.Exit(1);
             }
         }
     }
