@@ -83,33 +83,27 @@ namespace HTTPServer
                     return new Response(StatusCode.BadRequest, "text/html", content, redirected);
                 }
 
-                string physicalPath = Path.Combine(Configuration.RootPath, request.relativeURI);
-                
-                // check file
-                if (!File.Exists(physicalPath))
-                {
-                    // redirection page not found
-                    if (redirected != string.Empty)
-                    {
-                        statusCode = StatusCode.InternalServerError;
-                        physicalPath = Path.Combine(Configuration.RootPath, Configuration.InternalErrorDefaultPageName);
-                    }
-                    // normal page not found
-                    else
-                    {
-                        statusCode = StatusCode.NotFound;
-                        physicalPath = Path.Combine(Configuration.RootPath, Configuration.NotFoundDefaultPageName);
-                    }
-                }
-                
+                string physicalPath;
+
                 // check for redirect
+                string relative = request.relativeURI;
+                Dictionary<string, string> obj = Configuration.RedirectionRules;
                 redirected = GetRedirectionPagePathIFExist(request.relativeURI);
                 if (redirected != string.Empty)
                 {
                     statusCode = StatusCode.Redirect;
                     physicalPath = Path.Combine(Configuration.RootPath, Configuration.RedirectionDefaultPageName);
                 }
-
+                else
+                    physicalPath = Path.Combine(Configuration.RootPath, request.relativeURI);
+                
+                // check file
+                if (!File.Exists(physicalPath))
+                {
+                    // page not found
+                    statusCode = StatusCode.NotFound;
+                    physicalPath = Path.Combine(Configuration.RootPath, Configuration.NotFoundDefaultPageName);
+                }
                 // read the physical file
                 content = LoadDefaultPage(physicalPath);
             }
