@@ -8,12 +8,16 @@ namespace HTTPServer
 {
     class Logger
     {
+        static object lockObject = new object();
         public static void LogException(Exception ex)
         {
             //Datetime:
             DateTime dateTime = DateTime.Now;
-            // log exception details associated with datetime 
-            File.AppendAllText("log.txt", $"{dateTime}: {ex.Message} at {ex.TargetSite}\n");
+            // log exception details associated with datetime
+            lock(lockObject)
+            {
+                File.AppendAllText("log.txt", $"{dateTime}: {ex.Message} at {ex.TargetSite}\n");
+            }
         }
     }
 }
