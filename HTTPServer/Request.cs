@@ -22,8 +22,8 @@ namespace HTTPServer
         string[] requestLines;
         RequestMethod method;
         public string relativeURI;
-        Dictionary<string, string> headerLines;
-
+        Dictionary<string, string> headerLines = new Dictionary<string, string>();
+        int blankLineIndex;
         public Dictionary<string, string> HeaderLines
         {
             get { return headerLines; }
@@ -31,7 +31,7 @@ namespace HTTPServer
 
         HTTPVersion httpVersion;
         string requestString;
-        string[] contentLines;
+        string content;
 
         public Request(string requestString)
         {
@@ -44,9 +44,9 @@ namespace HTTPServer
         public bool ParseRequest()
         {
             //TODO: parse the receivedRequest using the \r\n delimeter   
-            contentLines = requestString.Split(new string[] { "\r\n" }, StringSplitOptions.None);
+            requestLines = requestString.Split(new string[] { "\r\n" }, StringSplitOptions.None);
             // check that there is atleast 3 lines: Request line, Host Header, Blank line (usually 4 lines with the last empty line for empty content)
-            if (contentLines.Length < 3)
+            if (requestLines.Length < 3)
                 return false;
             // Parse Request line
             if (!ParseRequestLine())
@@ -57,33 +57,42 @@ namespace HTTPServer
             // Load header lines into HeaderLines dictionary
             if (!LoadHeaderLines())
                 return false;
+            // get content if post request
+            if(method == RequestMethod.POST)
+            {
+                for (int i = blankLineIndex + 1; i < requestLines.Length; i++)
+                {
+                    content += requestLines[i] + "\r\n";
+                }
+            }
+
             return true;
         }
 
         private bool ParseRequestLine()
         {
-            requestLines = contentLines[0].Split(' ');
-            if (requestLines.Length < 3)
+            string[] tokens = requestLines[0].Split(new string[] { " " }, StringSplitOptions.None);
+            if (tokens.Length < 2)
                 return false;
             // Check Method
-            if (requestLines[0] == "GET")
+            if (tokens[0] == "GET")
                 method = RequestMethod.GET;
-            else if (requestLines[0] == "POST")
+            else if (tokens[0] == "POST")
                 method = RequestMethod.POST;
-            else if (requestLines[0] == "HEAD")
+            else if (tokens[0] == "HEAD")
                 method = RequestMethod.HEAD;
             else
                 return false;
             // Check URI
-            if (!ValidateIsURI(requestLines[1]))
+            if (!ValidateIsURI(tokens[1]))
                 return false;
-            relativeURI = requestLines[1].Substring(1);
+            relativeURI = tokens[1].Substring(1);
             //Check HTTP Version
-            if (requestLines[2] == "HTTP/0.9")
+            if (tokens.Length < 3 || tokens[2] == "HTTP/0.9" || tokens[2] == "undefined" || tokens[2] == "")
                 httpVersion = HTTPVersion.HTTP09;
-            else if (requestLines[2] == "HTTP/1.0")
+            else if (tokens[2] == "HTTP/1.0")
                 httpVersion = HTTPVersion.HTTP10;
-            else if (requestLines[2] == "HTTP/1.1")
+            else if (tokens[2] == "HTTP/1.1")
                 httpVersion = HTTPVersion.HTTP11;
             else
                 return false;
@@ -97,17 +106,19 @@ namespace HTTPServer
 
         private bool LoadHeaderLines()
         {
-            headerLines = new Dictionary<string, string>();
             try
             {
-                for (int i = 1; contentLines[i] != ""; i++)
+                for(int i = 1; requestLines[i] != ""; i++)
                 {
-                    string[] dict = contentLines[i].Split(':');
+                    string[] dict = requestLines[i].Split(new char[] { ':' }, 2);
                     if (dict.Length < 2)
-                        continue;
+                        return false;
                     headerLines[dict[0]] = dict[1];
                 }
-                return true;
+                if (httpVersion == HTTPVersion.HTTP11 && headerLines.ContainsKey("Host"))
+                    return true;
+                else
+                    return false;
             }
             catch (Exception ex)
             {
@@ -118,13 +129,15 @@ namespace HTTPServer
 
         private bool ValidateBlankLine()
         {
-            for (int i = 2; i < contentLines.Length; i++)
+            for (int i = 1; i < requestLines.Length; i++)
             {
-                if (contentLines[i] == "")
+                if (requestLines[i] == "")
+                {
+                    blankLineIndex = i;
                     return true;
+                }
             }
             return false;
         }
-
     }
 }
