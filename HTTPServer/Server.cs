@@ -71,51 +71,43 @@ namespace HTTPServer
         Response HandleRequest(Request request)
         {
             string content;
-            string redirected = string.Empty;
-            StatusCode statusCode = StatusCode.OK;
             try
             {
                 // check for bad request
                 if (request.ParseRequest() == false)
                 {
-                    statusCode = StatusCode.BadRequest;;
                     content = File.ReadAllText(Path.Combine(Configuration.RootPath, Configuration.BadRequestDefaultPageName));
-                    return new Response(StatusCode.BadRequest, "text/html", content, redirected);
+                    return new Response(StatusCode.BadRequest, "text/html", content, string.Empty);
                 }
-
-                string physicalPath;
 
                 // check for redirect
-                string relative = request.relativeURI;
-                Dictionary<string, string> obj = Configuration.RedirectionRules;
-                redirected = GetRedirectionPagePathIFExist(request.relativeURI);
-                if (redirected != string.Empty)
+                string redirectedPage = GetRedirectionPagePathIFExist(request.relativeURI);
+                if (redirectedPage != string.Empty)
                 {
-                    statusCode = StatusCode.Redirect;
-                    physicalPath = Path.Combine(Configuration.RootPath, Configuration.RedirectionDefaultPageName);
+                    content = LoadDefaultPage(Configuration.RedirectionDefaultPageName);
+                    return new Response(StatusCode.Redirect, "text/html", content, redirectedPage);
                 }
-                else
-                    physicalPath = Path.Combine(Configuration.RootPath, request.relativeURI);
-                
+
+                string physicalPath = Path.Combine(Configuration.RootPath, request.relativeURI);
                 // check file
                 if (!File.Exists(physicalPath))
                 {
                     // page not found
-                    statusCode = StatusCode.NotFound;
-                    physicalPath = Path.Combine(Configuration.RootPath, Configuration.NotFoundDefaultPageName);
+                    content = LoadDefaultPage(Configuration.NotFoundDefaultPageName);
+                    return new Response(StatusCode.NotFound, "text/html", content, "");
                 }
                 // read the physical file
-                content = LoadDefaultPage(physicalPath);
+                content = File.ReadAllText(physicalPath);
+                // Create OK response
+                return new Response(StatusCode.OK, "text/html", content, "");
             }
             catch (Exception ex)
             {
                 Logger.LogException(ex);
                 // in case of exception, return Internal Server Error.
-                statusCode = StatusCode.InternalServerError;
-                content = File.ReadAllText(Path.Combine(Configuration.RootPath, Configuration.InternalErrorDefaultPageName));
+                content = LoadDefaultPage(Configuration.InternalErrorDefaultPageName);
+                return new Response(StatusCode.InternalServerError, "text/html", content, "");
             }
-            // Create OK response
-            return new Response(statusCode, "text/html", content, redirected);
         }
 
         private string GetRedirectionPagePathIFExist(string relativePath)
@@ -128,8 +120,9 @@ namespace HTTPServer
             return string.Empty;
         }
 
-        private string LoadDefaultPage(string filePath)
+        private string LoadDefaultPage(string pageName)
         {
+            string filePath = Path.Combine(Configuration.RootPath, pageName);
             try
             {
                 return File.ReadAllText(filePath);
@@ -143,7 +136,6 @@ namespace HTTPServer
 
         private void LoadRedirectionRules(string filePath)
         {
-            Configuration.RedirectionRules = new Dictionary<string, string>();
             try
             {
                 // read the redirection rules from file
