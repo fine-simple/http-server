@@ -9,7 +9,7 @@ namespace HTTPServer
     {
         public static string ServerHTTPVersion = "HTTP/1.1";
         public static string ServerType = "FCISServer";
-        public static Dictionary<string, string> RedirectionRules;
+        public static Dictionary<string, string> RedirectionRules = new Dictionary<string, string>();
         public static string RootPath = "C:\\inetpub\\wwwroot\\fcis1";
         public static string RedirectionDefaultPageName = "Redirect.html";
         public static string BadRequestDefaultPageName = "BadRequest.html";
