@@ -127,7 +127,7 @@ namespace HTTPServer
             {
                 return File.ReadAllText(filePath);
             }
-            catch (FileNotFoundException ex)
+            catch (Exception ex)
             {
                 Logger.LogException(ex);
                 return string.Empty;
