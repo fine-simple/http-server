@@ -108,17 +108,17 @@ namespace HTTPServer
         {
             try
             {
-                for(int i = 1; requestLines[i] != ""; i++)
+                for(int i = 1; i!= blankLineIndex; i++)
                 {
                     string[] dict = requestLines[i].Split(new char[] { ':' }, 2);
                     if (dict.Length < 2)
                         return false;
                     headerLines[dict[0]] = dict[1];
                 }
-                if (httpVersion == HTTPVersion.HTTP11 && headerLines.ContainsKey("Host"))
-                    return true;
-                else
+                if (httpVersion == HTTPVersion.HTTP11 && !headerLines.ContainsKey("Host"))
                     return false;
+                else
+                    return true;
             }
             catch (Exception ex)
             {

@@ -76,7 +76,7 @@ namespace HTTPServer
                 // check for bad request
                 if (request.ParseRequest() == false)
                 {
-                    content = File.ReadAllText(Path.Combine(Configuration.RootPath, Configuration.BadRequestDefaultPageName));
+                    content = LoadDefaultPage(Configuration.BadRequestDefaultPageName);
                     return new Response(StatusCode.BadRequest, "text/html", content, string.Empty);
                 }
 
@@ -141,7 +141,7 @@ namespace HTTPServer
                 // read the redirection rules from file
                 string rawText = File.ReadAllText(filePath);
                 // fill Configuration.RedirectionRules dictionary
-                string[] redirections = rawText.Split('\n');
+                string[] redirections = rawText.Split(new string[] { "\r\n" },StringSplitOptions.RemoveEmptyEntries);
                 for (int i = 0; i < redirections.Length; i++)
                 {
                     string[] redirectionArr = redirections[i].Split(',');
